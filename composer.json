@@ -1,0 +1,21 @@
+{
+    "name": "m3team/paged-index",
+    "description": "Simple function to deal with dynamic frontend's datasources",
+    "license": "proprietary",
+    "authors": [
+        {
+            "name": "Ares Bagatin",
+            "email": "ares.bagatin@m3team.it"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {
+        "illuminate/http": "^5.7.19",
+        "illuminate/database": "^5.7.19"
+    },
+    "autoload": {
+        "psr-4": {
+            "M3Team\\PagedIndex\\": "src/"
+        }
+    }
+}
