@@ -47,6 +47,7 @@ campo filtro, deve restituire un valore booleano, __true__ nel caso in cui il mo
 e __false__ in caso contrario.
 
 Nel seguente esempio viene usato come modello di esempio **User**, che ha al suo interno i campi _email_ e _name_.
+
 ```injectablephp
 use M3Team\PagedIndex\PagedIndex;
 use Illuminate\Http\Request;
@@ -65,10 +66,14 @@ function(Request $request, Collection $collection){
 
 Per attivare l'ordinamento bisogna passare al _**PagedIndex**_ una funzione di ordinamento oltre ai campi *sort_column*
 e *sort_direction* nella richiesta. La funzione di ordinamento può avere due parametri, il primo è il modello, il
-secondo è il campo **sort_column**. La funzione si comporta esattamente come la funzione di callback passata al filter di
-[/**Illuminate/Database/Eloquent/Collection**](https://laravel.com/api/8.x/Illuminate/Database/Eloquent/Collection.html#method_filter).
+secondo è il campo **sort_column**. La funzione si comporta esattamente come la funzione di callback passata al filter
+di
+[/**
+Illuminate/Database/Eloquent/Collection**](https://laravel.com/api/8.x/Illuminate/Database/Eloquent/Collection.html#method_filter)
+.
 
 Nel seguente esempio viene usato come modello di esempio **User**, che ha al suo interno i campi _email_ e _name_.
+
 ```injectablephp
 use M3Team\PagedIndex\PagedIndex;
 use Illuminate\Http\Request;
@@ -79,6 +84,39 @@ function(Request $request, Collection $collection){
     $p->setSortFn(function (User $model, $column){
         return $column == 0 ? $user->email : $user->name;
     });
+}
+```
+
+#### Risultato ####
+
+Per richiedere il risultato delle operazioni bisogna usare il metodo *getObjects()*
+
+```injectablephp
+use M3Team\PagedIndex\PagedIndex;
+use Illuminate\Http\Request;
+use Illuminate\Database\Eloquent\Collection;
+
+function(Request $request, Collection $collection){
+    $p = new PagedIndex($request, $collection);
+    $p->setFilterFn(function(User $user, $filter){
+        return $user->email == 0;
+    });
+    $p->setSortFn(function (User $model, $column){
+        return $column == 0 ? $user->email : $user->name;
+    });
+    return $p->getObjects();
+}
+```
+
+#### Requisiti ####
+
+Questo pacchetto come requisiti ha:
+
+```json
+{
+  "require": {
+    "laravel/framework": "^v8.0.0"
+  }
 }
 ```
 
