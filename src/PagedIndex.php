@@ -20,7 +20,8 @@
         protected int $pageIndex, $pageSize, $sortColumn;
         protected string $filter, $sortDirection;
         protected Collection $collection;
-        protected Closure $sortFn, $filterFn;
+        protected SortFunction $sortFn;
+        protected FilterFunction $filterFn;
 
         public function __construct(Request $request, Collection $collection) {
             $this->pageIndex = $request->get(self::PAGE_INDEX, 0);
@@ -29,11 +30,16 @@
             $this->sortColumn = $request->get(self::SORT_COLUMN, 0);
             $this->sortDirection = $request->get(self::SORT_DIRECTION, 'asc');
             $this->collection = $collection;
-            $this->sortFn = function (Model $query) {
-                return $query->id;
+            $this->sortFn = new class implements SortFunction {
+                public function __invoke(Model $query, int $column) {
+                    return $query->id;
+                }
+
             };
-            $this->filterFn = function (Model $query) {
-                return true;
+            $this->filterFn = new class implements FilterFunction{
+                public function __invoke(Model $model, string $filter): bool {
+                    return true;
+                }
             };
         }
 
@@ -65,11 +71,11 @@
             return $this->collection->count();
         }
 
-        public function setSortFn(Closure $sortFn) {
+        public function setSortFn(SortFunction $sortFn) {
             $this->sortFn = $sortFn;
         }
 
-        public function setFilterFn(Closure $filterFn) {
+        public function setFilterFn(FilterFunction $filterFn) {
             $this->filterFn = $filterFn;
         }
 
