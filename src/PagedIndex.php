@@ -4,8 +4,7 @@
     namespace M3Team\PagedIndex;
 
 
-    use Closure;
-    use Illuminate\Database\Eloquent\Model;
+    use Exception;
     use Illuminate\Http\Request;
     use Illuminate\Support\Collection;
 
@@ -31,13 +30,13 @@
             $this->sortDirection = $request->get(self::SORT_DIRECTION, 'asc');
             $this->collection = $collection;
             $this->sortFn = new class implements SortFunction {
-                public function __invoke(Model $query, int $column) {
+                public function __invoke($query, int $column) {
                     return $query->id;
                 }
 
             };
             $this->filterFn = new class implements FilterFunction{
-                public function __invoke(Model $model, string $filter): bool {
+                public function __invoke($model, string $filter): bool {
                     return true;
                 }
             };
@@ -46,7 +45,7 @@
         protected function getSkip() {
             try {
                 return $this->pageIndex * $this->pageSize;
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 return 0;
             }
         }
@@ -64,7 +63,7 @@
 
         protected function filter(): int {
             if ($this->filter != '') {
-                $this->collection = $this->collection->filter(function (Model $query) {
+                $this->collection = $this->collection->filter(function ($query) {
                     return ($this->filterFn)($query, $this->filter);
                 });
             }

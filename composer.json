@@ -2,6 +2,7 @@
     "name": "m3team/paged-index",
     "description": "Simple function to deal with dynamic frontend's datasources",
     "type": "library",
+    "version": "2.1",
     "authors": [
         {
             "name": "Ares Bagatin",
