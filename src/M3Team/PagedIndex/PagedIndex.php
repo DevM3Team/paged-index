@@ -3,10 +3,10 @@
 
     namespace M3Team\PagedIndex;
 
-
     use Exception;
-    use Illuminate\Http\Request;
     use Illuminate\Support\Collection;
+
+    use function request;
 
     class PagedIndex {
         const PAGE_INDEX = 'page_index';
@@ -22,12 +22,12 @@
         protected SortFunction $sortFn;
         protected FilterFunction $filterFn;
 
-        public function __construct(Request $request, Collection $collection) {
-            $this->pageIndex = $request->get(self::PAGE_INDEX, 0);
-            $this->pageSize = $request->get(self::PAGE_SIZE, 0);
-            $this->filter = $request->get(self::FILTER, '');
-            $this->sortColumn = $request->get(self::SORT_COLUMN, 0);
-            $this->sortDirection = $request->get(self::SORT_DIRECTION, 'asc');
+        public function __construct(Collection $collection) {
+            $this->pageIndex = request()->get(self::PAGE_INDEX, 0);
+            $this->pageSize = request()->get(self::PAGE_SIZE, 0);
+            $this->filter = request()->get(self::FILTER, '');
+            $this->sortColumn = request()->get(self::SORT_COLUMN, 0);
+            $this->sortDirection = request()->get(self::SORT_DIRECTION, 'asc');
             $this->collection = $collection;
             $this->sortFn = new class implements SortFunction {
                 public function __invoke($query, int $column) {
