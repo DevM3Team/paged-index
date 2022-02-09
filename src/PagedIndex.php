@@ -5,6 +5,8 @@ namespace M3Team\PagedIndex;
 use Exception;
 use Illuminate\Support\Collection;
 use JetBrains\PhpStorm\ArrayShape;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
 
 abstract class PagedIndex
 {
@@ -22,6 +24,7 @@ abstract class PagedIndex
     /**
      * Costruttore che prende dalla richiesta i valori oppure ci assegna il valore di default
      * @param Collection $collection
+     * @throws NotFoundExceptionInterface|ContainerExceptionInterface
      */
     public function __construct(Collection $collection)
     {
