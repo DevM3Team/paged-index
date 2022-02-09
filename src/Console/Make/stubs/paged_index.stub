@@ -7,12 +7,20 @@ use M3Team\PagedIndex\PagedIndex;
 class {{class}} extends PagedIndex{
 
     /**
-     * Override of the constructor
-     *
-     * @param Collection $collection
+     * Ordina la collection dell'oggetto e la ritorna ordinata
+     * @return Collection La collection ordinata
      */
-    public function __construct(Collection $collection)
+    protected function sort(): Collection
     {
-        parent::__construct($collection);
+        //
+    }
+
+    /**
+     * Filtra la collection dell'oggetto e la ritorna filtrata
+     * @return Collection La collection filtrata
+     */
+    protected function filter(): Collection
+    {
+        //
     }
 }
