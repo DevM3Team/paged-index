@@ -1,0 +1,18 @@
+<?php
+
+namespace {{ namespace }};
+
+use M3Team\PagedIndex\PagedIndex;
+
+class {{class}} extends PagedIndex{
+
+    /**
+     * Override of the constructor
+     *
+     * @param Collection $collection
+     */
+    public function __construct(Collection $collection)
+    {
+        parent::__construct($collection);
+    }
+}

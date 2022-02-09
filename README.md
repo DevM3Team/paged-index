@@ -25,9 +25,7 @@ collezione.
 
 ```injectablephp
 
-use M3Team\PagedIndex\PagedIndex;
-use Illuminate\Http\Request;
-use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Collection;use Illuminate\Http\Request;
 
 function(Request $request, Collection $collection){
     $p = new PagedIndex($request, $collection);
@@ -49,10 +47,7 @@ e __false__ in caso contrario.
 Nel seguente esempio viene usato come modello di esempio **User**, che ha al suo interno i campi _email_ e _name_.
 
 ```injectablephp
-use M3Team\PagedIndex\PagedIndex;
-use Illuminate\Http\Request;
-use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Collection;use Illuminate\Http\Request;
 
 function(Request $request, Collection $collection){
     $p = new PagedIndex($request, $collection);
@@ -75,9 +70,7 @@ Illuminate/Database/Eloquent/Collection**](https://laravel.com/api/8.x/Illuminat
 Nel seguente esempio viene usato come modello di esempio **User**, che ha al suo interno i campi _email_ e _name_.
 
 ```injectablephp
-use M3Team\PagedIndex\PagedIndex;
-use Illuminate\Http\Request;
-use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Collection;use Illuminate\Http\Request;
 
 function(Request $request, Collection $collection){
     $p = new PagedIndex($request, $collection);
@@ -92,9 +85,7 @@ function(Request $request, Collection $collection){
 Per richiedere il risultato delle operazioni bisogna usare il metodo *getObjects()*
 
 ```injectablephp
-use M3Team\PagedIndex\PagedIndex;
-use Illuminate\Http\Request;
-use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Collection;use Illuminate\Http\Request;
 
 function(Request $request, Collection $collection){
     $p = new PagedIndex($request, $collection);
