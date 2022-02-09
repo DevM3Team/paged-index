@@ -2,6 +2,7 @@
 
 namespace {{ namespace }};
 
+use Illuminate\Support\Collection;
 use M3Team\PagedIndex\PagedIndex;
 
 class {{class}} extends PagedIndex{
