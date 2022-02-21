@@ -82,10 +82,11 @@ abstract class PagedIndex
     {
         $this->collection = $this->sort();
         $this->collection = $this->filter();
+        $count = $this->collection->count();
         $this->collection = $this->page();
         return [
             "objects" => $this->collection->values(),
-            "total" => $this->collection->count(),
+            "total" => $count,
             "page_index" => $this->pageIndex,
             "page_size" => $this->pageSize
         ];
