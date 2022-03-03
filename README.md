@@ -1,113 +1,80 @@
 # PagedIndex #
 
+## EN ##
+
+### What is this package for? ###
+This package offers a class that creates a quick implementation of a server-sided loading table. The class deals with
+sorting, filtering and paginating functions.
+
+### How to use it? ###
+
+The keys of the request are 5:
+- `filter`: the string value passed to the filtering function.
+- `page_index`: the index of the page, it's an integer.
+- `page_size`: the size of the pages, it's an integer.
+- `sort_column`: the integer that represents the column passed to the sorting function.
+- `sort_direction`: the direction of the sorting it can be "asc" or "desc".
+
+The `PagedIndex` abstract class has got 2 abstract methods, `sort` and `filter`.
+
+There is an Artisan Command that creates a model referred PagedIndex. 
+
+### Examples ###
+```shell
+    php artisan make:paged_index ModelPagedIndex
+```
+
+It creates an extension of the `PagedIndex` abstract class, the class will be saved inside `app/Http/PagedIndexes`.
+
+
+This is the way to use a simple model related PagedIndex:
+```injectablephp
+use Illuminate\Database\Eloquent\Collection;use Illuminate\Http\Request;
+
+//CONTROLLER CLASS
+
+public function index(Collection $collection){
+    $p = new ModelPagedIndex($collection);
+    return new Response($p->getObjects());
+}
+```
+
+
+
+## IT ##
+
 ### A cosa serve questa repo? ###
 
-Questa repo serve per creare velocemente un metodo di index che ritorni i dati per essere utilizzati in una server-sided
-loading table.
+Questo package offre una classe che permette di creare una veloce implementazione di tabelle caricate nel lato server.
+Di default permette di implementare funzioni di ordinamento, filtro e paginazione.
 
 ### Come si usa? ###
 
-Le richieste al metodo di index devono avere una struttura predefinita per funzionare:
+Le key delle richieste sono 5:
+- `filter`: la stringa passata alla funzione di filtro.
+- `page_index`: l'indice della pagina, è un integer.
+- `page_size`: il numero di oggetti per pagina, è un integer.
+- `sort_column`: l'intero che rappresenta la colonna passata alla funzione di ordinamento.
+- `sort_direction`: il valore della direzione dell'ordinamento, può essere "asc" per l'ordine crescente e "desc" per decresente.
 
+La classe astratta `PagedIndex` ha 2 metodi da implementare, `sort` per l'ordinamento e `filter` per il filtro.
+
+C'è un comando Artisan che crea un PagedIndex.
+
+### Esempi ###
+```shell
+    php artisan make:paged_index ModelPagedIndex
 ```
-filter?: string,
-page_index?: int,
-page_size?: int,
-sort_column?: int,
-sort_direction?: "asc"|"desc"
-```
+Crea un estensione della classe astratta `PagedIndex`, la classe sarà salvata all'interno di `app/Http/PagedIndexes`.
 
-La richiesta viene passata direttamente all'oggetto di classe _**PagedIndex**_, assieme alla collezione base di dati da
-eventualmente ordinare, filtrare e paginare.
-
-Come primo passo bisogna istanziare un oggetto di classe _**PagedIndex**_, passando come argomenti la richiesta e la
-collezione.
-
-```injectablephp
-
-use Illuminate\Database\Eloquent\Collection;use Illuminate\Http\Request;
-
-function(Request $request, Collection $collection){
-    $p = new PagedIndex($request, $collection);
-}
-```
-
-#### Paginazione #####
-
-La paginazione è già attiva, basta passare i campi *page_index* e *page_size* nella richiesta, se non passati o lasciati
-a 0 la paginazione sarà disattivata.
-
-#### Filtro ####
-
-Per attivare il filtro bisogna passare al _**PagedIndex**_ una funzione di filtro oltre al campo *filter*
-nella richiesta. La funzione di filtro può avere due parametri, il primo è il modello da filtrare e il secondo è il
-campo filtro, deve restituire un valore booleano, __true__ nel caso in cui il modello rispetti i requisiti del filtro
-e __false__ in caso contrario.
-
-Nel seguente esempio viene usato come modello di esempio **User**, che ha al suo interno i campi _email_ e _name_.
-
+Questo è un esempio di come si usa un semplice PagedIndex:
 ```injectablephp
 use Illuminate\Database\Eloquent\Collection;use Illuminate\Http\Request;
 
-function(Request $request, Collection $collection){
-    $p = new PagedIndex($request, $collection);
-    $p->setFilterFn(function(User $user, $filter){
-        return $user->email == 0;
-    });
+//CONTROLLER CLASS
+
+public function index(Collection $collection){
+    $p = new ModelPagedIndex($collection);
+    return new Response($p->getObjects());
 }
 ```
-
-#### Ordinamento ####
-
-Per attivare l'ordinamento bisogna passare al _**PagedIndex**_ una funzione di ordinamento oltre ai campi *sort_column*
-e *sort_direction* nella richiesta. La funzione di ordinamento può avere due parametri, il primo è il modello, il
-secondo è il campo **sort_column**. La funzione si comporta esattamente come la funzione di callback passata al filter
-di
-[/**
-Illuminate/Database/Eloquent/Collection**](https://laravel.com/api/8.x/Illuminate/Database/Eloquent/Collection.html#method_filter)
-.
-
-Nel seguente esempio viene usato come modello di esempio **User**, che ha al suo interno i campi _email_ e _name_.
-
-```injectablephp
-use Illuminate\Database\Eloquent\Collection;use Illuminate\Http\Request;
-
-function(Request $request, Collection $collection){
-    $p = new PagedIndex($request, $collection);
-    $p->setSortFn(function (User $model, $column){
-        return $column == 0 ? $user->email : $user->name;
-    });
-}
-```
-
-#### Risultato ####
-
-Per richiedere il risultato delle operazioni bisogna usare il metodo *getObjects()*
-
-```injectablephp
-use Illuminate\Database\Eloquent\Collection;use Illuminate\Http\Request;
-
-function(Request $request, Collection $collection){
-    $p = new PagedIndex($request, $collection);
-    $p->setFilterFn(function(User $user, $filter){
-        return $user->email == 0;
-    });
-    $p->setSortFn(function (User $model, $column){
-        return $column == 0 ? $user->email : $user->name;
-    });
-    return $p->getObjects();
-}
-```
-
-#### Requisiti ####
-
-Questo pacchetto come requisiti ha:
-
-```json
-{
-  "require": {
-    "laravel/framework": "^v8.0.0"
-  }
-}
-```
-

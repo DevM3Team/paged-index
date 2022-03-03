@@ -3,7 +3,7 @@
 namespace M3Team\PagedIndex;
 
 use Illuminate\Support\ServiceProvider;
-use M3Team\PagedIndex\Console\Make\PagedIndexMakeCommand;
+use M3Team\PagedIndex\Console\Commands\Make\PagedIndexMakeCommand;
 
 class PagedIndexServiceProvider extends ServiceProvider
 {

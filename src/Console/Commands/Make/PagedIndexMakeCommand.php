@@ -1,6 +1,6 @@
 <?php
 
-namespace M3Team\PagedIndex\Console\Make;
+namespace M3Team\PagedIndex\Console\Commands\Make;
 
 use Illuminate\Console\Concerns\CreatesMatchingTest;
 use Illuminate\Console\GeneratorCommand;
