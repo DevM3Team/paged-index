@@ -1,6 +1,6 @@
 {
     "name": "m3team/paged-index",
-    "description": "Simple function to deal with dynamic frontend's datasources",
+    "description": "Simple package to deal with dynamic frontend's datasources",
     "type": "library",
     "version": "4.0.1",
     "authors": [
