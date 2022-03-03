@@ -5,6 +5,8 @@ namespace M3Team\PagedIndex;
 use Exception;
 use Illuminate\Support\Collection;
 use JetBrains\PhpStorm\ArrayShape;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
 
 abstract class PagedIndex
 {
@@ -20,8 +22,10 @@ abstract class PagedIndex
     protected Collection $collection;
 
     /**
+     * The constructor takes the values from the request if specified otherwise will use default values
      * Costruttore che prende dalla richiesta i valori oppure ci assegna il valore di default
      * @param Collection $collection
+     * @throws NotFoundExceptionInterface|ContainerExceptionInterface
      */
     public function __construct(Collection $collection)
     {
@@ -34,6 +38,7 @@ abstract class PagedIndex
     }
 
     /**
+     * The number of models to skip according to page's size and page's index
      * Specifica come si sceglie quanti modelli skippare in base alla pagina
      * @return int
      */
@@ -47,20 +52,23 @@ abstract class PagedIndex
     }
 
     /**
+     * Orders the models' collection
      * Ordina la collection dell'oggetto e la ritorna ordinata
-     * @return Collection La collection ordinata
+     * @return Collection The ordered collection | La collection ordinata
      */
     protected abstract function sort(): Collection;
 
     /**
+     * Filters the models' collection
      * Filtra la collection dell'oggetto e la ritorna filtrata
-     * @return Collection La collection filtrata
+     * @return Collection The filtered collection | La collection filtrata
      */
     protected abstract function filter(): Collection;
 
     /**
+     * Selects the models to return according to page's size and page's index
      * Seleziona il numero di oggetti da ritornare in base alla grandezza della pagina e al numero della pagina
-     * @return Collection La collection paginata
+     * @return Collection The paginated collection | La collection paginata
      */
     protected function page(): Collection
     {
@@ -70,6 +78,7 @@ abstract class PagedIndex
     }
 
     /**
+     * Return the computed collection
      * Ritorna gli oggetti elaborati
      * @return array
      */
