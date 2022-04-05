@@ -4,7 +4,7 @@ namespace M3Team\PagedIndex;
 
 use Exception;
 use Illuminate\Support\Collection;
-use JetBrains\PhpStorm\ArrayShape;
+use M3Team\PagedIndex\Http\Resources\PagedIndexCollection;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 
@@ -80,25 +80,15 @@ abstract class PagedIndex
     /**
      * Return the computed collection
      * Ritorna gli oggetti elaborati
-     * @return array
+     * @return PagedIndexCollection
      */
-    #[ArrayShape([
-        "objects" => "\Illuminate\Support\Collection",
-        "total" => "int",
-        "page_index" => "int|mixed",
-        "page_size" => "int|mixed"
-    ])] public function getObjects(): array
+    public function getObjects(): PagedIndexCollection
     {
         $this->collection = $this->sort();
         $this->collection = $this->filter();
         $count = $this->collection->count();
         $this->collection = $this->page();
-        return [
-            "objects" => $this->collection->values(),
-            "total" => $count,
-            "page_index" => $this->pageIndex,
-            "page_size" => $this->pageSize
-        ];
+        return new PagedIndexCollection($this->collection, $count, $this->pageIndex, $this->pageSize);
     }
 
 }
