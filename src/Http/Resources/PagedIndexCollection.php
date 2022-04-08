@@ -28,7 +28,7 @@ class PagedIndexCollection extends ResourceCollection
     ])] public function toArray($request)
     {
         return [
-            'objects' => $this->collection,
+            'objects' => $this->collection->toArray(),
             "total" => $this->count,
             "page_index" => $this->pageIndex,
             "page_size" => $this->pageSize
