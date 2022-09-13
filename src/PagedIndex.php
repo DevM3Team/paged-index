@@ -2,6 +2,7 @@
 
 namespace M3Team\PagedIndex;
 
+use Closure;
 use Exception;
 use Illuminate\Support\Collection;
 use M3Team\PagedIndex\Http\Resources\PagedIndexCollection;
@@ -52,11 +53,23 @@ abstract class PagedIndex
     }
 
     /**
+     * The function that defines the collection's order
+     * La funzione che definisce l'ordinamento della collection
+     * @return Closure
+     */
+    protected abstract function sortingFunction(): Closure;
+
+
+    /**
      * Orders the models' collection
      * Ordina la collection dell'oggetto e la ritorna ordinata
      * @return Collection The ordered collection | La collection ordinata
      */
-    protected abstract function sort(): Collection;
+    protected function sort(): Collection
+    {
+        return $this->sortDirection === 'asc' ? $this->collection->sortBy($this->sortingFunction()) :
+            $this->collection->sortByDesc($this->sortingFunction());
+    }
 
     /**
      * Filters the models' collection

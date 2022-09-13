@@ -4,17 +4,18 @@ namespace {{ namespace }};
 
 use Illuminate\Support\Collection;
 use M3Team\PagedIndex\PagedIndex;
+use Closure;
 
 class {{class}} extends PagedIndex{
 
-    /**
-     * Orders the models' collection
-     * Ordina la collection dell'oggetto e la ritorna ordinata
-     * @return Collection La collection ordinata
+     /**
+     * The function that defines the collection's order
+     * La funzione che definisce l'ordinamento della collection
+     * @return Closure
      */
-    protected function sort(): Collection
+    protected function sortingFunction(): Closure
     {
-        //
+        // TODO implement the sorting function
     }
 
     /**
