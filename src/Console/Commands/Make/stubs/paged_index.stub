@@ -6,7 +6,8 @@ use Illuminate\Support\Collection;
 use M3Team\PagedIndex\PagedIndex;
 use Closure;
 
-class {{class}} extends PagedIndex{
+class {{class}} extends PagedIndex
+{
 
      /**
      * The function that defines the collection's order
