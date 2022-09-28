@@ -18,6 +18,7 @@ abstract class PagedIndex
     const SORT_DIRECTION = 'sort_direction';
 
 
+    protected string|null $resource = null;
     protected int $pageIndex, $pageSize, $sortColumn;
     protected string $filter, $sortDirection;
     protected Collection $collection;
@@ -101,7 +102,12 @@ abstract class PagedIndex
         $this->collection = $this->filter();
         $count = $this->collection->count();
         $this->collection = $this->page();
-        return new PagedIndexCollection($this->collection, $count, $this->pageIndex, $this->pageSize);
+        return new PagedIndexCollection(
+            $this->resource === null ? $this->collection : ($this->resource)::collection($this->collection),
+            $count,
+            $this->pageIndex,
+            $this->pageSize
+        );
     }
 
 }
