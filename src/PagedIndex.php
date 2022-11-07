@@ -4,22 +4,24 @@ namespace M3Team\PagedIndex;
 
 use Closure;
 use Exception;
+use Illuminate\Contracts\Support\Jsonable;
 use Illuminate\Support\Collection;
 use M3Team\PagedIndex\Http\Resources\PagedIndexCollection;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 
-abstract class PagedIndex
+abstract class PagedIndex implements Jsonable
 {
-    const PAGE_INDEX = 'page_index';
-    const PAGE_SIZE = 'page_size';
-    const FILTER = 'filter';
-    const SORT_COLUMN = 'sort_column';
-    const SORT_DIRECTION = 'sort_direction';
+    public const PAGE_INDEX = 'page_index';
+    public const PAGE_SIZE = 'page_size';
+    public const FILTER = 'filter';
+    public const SORT_COLUMN = 'sort_column';
+    public const SORT_DIRECTION = 'sort_direction';
 
 
     protected string|null $resource = null;
-    protected int $pageIndex, $pageSize, $sortColumn;
+    protected int $pageIndex, $pageSize;
+    protected mixed $sortColumn;
     protected string $filter, $sortDirection;
     protected Collection $collection;
 
@@ -108,6 +110,11 @@ abstract class PagedIndex
             $this->pageIndex,
             $this->pageSize
         );
+    }
+
+    public function toJson($options = 0): string
+    {
+        return $this->getObjects()->toJson($options);
     }
 
 }

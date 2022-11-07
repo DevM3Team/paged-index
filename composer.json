@@ -2,14 +2,13 @@
     "name": "m3team/paged-index",
     "description": "Simple package to deal with dynamic frontend's datasources",
     "type": "library",
-    "version": "4.1.2",
+    "version": "4.2.0",
     "authors": [
         {
             "name": "Ares Bagatin",
             "email": "ares.bagatin@m3team.it"
         }
     ],
-    "minimum-stability": "dev",
     "require": {
         "laravel/framework": "^9.0"
     },
