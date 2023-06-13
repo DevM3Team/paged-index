@@ -10,6 +10,9 @@ use M3Team\PagedIndex\Http\Resources\PagedIndexCollection;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 
+/**
+ * @template T
+ */
 abstract class PagedIndex implements Jsonable
 {
     public const PAGE_INDEX = 'page_index';
@@ -43,6 +46,7 @@ abstract class PagedIndex implements Jsonable
 
     /**
      * The number of models to skip according to page's size and page's index
+     *
      * Specifica come si sceglie quanti modelli skippare in base alla pagina
      * @return int
      */
@@ -57,6 +61,7 @@ abstract class PagedIndex implements Jsonable
 
     /**
      * The function that defines the collection's order
+     *
      * La funzione che definisce l'ordinamento della collection
      * @return Closure
      */
@@ -65,6 +70,7 @@ abstract class PagedIndex implements Jsonable
 
     /**
      * Orders the models' collection
+     *
      * Ordina la collection dell'oggetto e la ritorna ordinata
      * @return Collection The ordered collection | La collection ordinata
      */
@@ -76,13 +82,18 @@ abstract class PagedIndex implements Jsonable
 
     /**
      * Filters the models' collection
+     *
      * Filtra la collection dell'oggetto e la ritorna filtrata
      * @return Collection The filtered collection | La collection filtrata
      */
-    protected abstract function filter(): Collection;
+    protected function filter(): Collection
+    {
+        return $this->collection->filter(fn($object) => $this->filterFunction($object));
+    }
 
     /**
      * Selects the models to return according to page's size and page's index
+     *
      * Seleziona il numero di oggetti da ritornare in base alla grandezza della pagina e al numero della pagina
      * @return Collection The paginated collection | La collection paginata
      */
@@ -116,5 +127,15 @@ abstract class PagedIndex implements Jsonable
     {
         return $this->getObjects()->toJson($options);
     }
+
+
+    /**
+     * The function that decides how to filter an element of the collection
+     *
+     * La funzione che decide come filtrare il singolo elemento della collezione
+     * @param T $object
+     * @return bool
+     */
+    protected abstract function filterFunction($object): bool;
 
 }
