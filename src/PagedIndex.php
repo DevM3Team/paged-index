@@ -22,10 +22,12 @@ abstract class PagedIndex implements Jsonable
     public const SORT_DIRECTION = 'sort_direction';
 
 
+    /** @var class-string|null  */
     protected string|null $resource = null;
     protected int $pageIndex, $pageSize;
     protected mixed $sortColumn;
-    protected string $filter, $sortDirection;
+    protected ?string $filter;
+    protected ?string $sortDirection;
     protected Collection $collection;
 
     /**
@@ -38,7 +40,7 @@ abstract class PagedIndex implements Jsonable
     {
         $this->pageIndex = request()->get(self::PAGE_INDEX, 0);
         $this->pageSize = request()->get(self::PAGE_SIZE, 0);
-        $this->filter = request()->get(self::FILTER, '');
+        $this->filter = request()->get(self::FILTER, null);
         $this->sortColumn = request()->get(self::SORT_COLUMN, 0);
         $this->sortDirection = request()->get(self::SORT_DIRECTION, 'asc');
         $this->collection = $collection;
