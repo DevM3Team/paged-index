@@ -24,7 +24,7 @@ class {{class}} extends PagedIndex
      * Filtra la collection dell'oggetto e la ritorna filtrata
      * @return Collection La collection filtrata
      */
-    protected function filterFunction($object): Collection
+    protected function filterFunction($object): bool
     {
         return true;
     }
