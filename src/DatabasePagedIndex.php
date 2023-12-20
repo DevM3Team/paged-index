@@ -3,11 +3,12 @@
 namespace M3Team\PagedIndex;
 
 use Exception;
+use Illuminate\Contracts\Support\Jsonable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use M3Team\PagedIndex\Http\Resources\PagedIndexCollection;
 
-class DatabasePagedIndex
+class DatabasePagedIndex implements Jsonable
 {
     public const PAGE_INDEX = 'page_index';
     public const PAGE_SIZE = 'page_size';
