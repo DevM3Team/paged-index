@@ -4,6 +4,7 @@ namespace M3Team\PagedIndex;
 
 use Exception;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use M3Team\PagedIndex\Http\Resources\PagedIndexCollection;
 
 class DatabasePagedIndex
@@ -36,7 +37,7 @@ class DatabasePagedIndex
         }
     }
 
-    public function __construct(protected Builder $builder)
+    public function __construct(protected QueryBuilder|Builder $builder)
     {
         $this->pageIndex = request()->get(self::PAGE_INDEX, 0);
         $this->pageSize = request()->get(self::PAGE_SIZE, 0);
@@ -45,17 +46,17 @@ class DatabasePagedIndex
         $this->sortDirection = request()->get(self::SORT_DIRECTION, 'asc');
     }
 
-    protected function sort(): Builder
+    protected function sort(): QueryBuilder|Builder
     {
         return $this->builder->orderBy($this->sortColumn, $this->sortDirection);
     }
 
-    protected function filter(): Builder
+    protected function filter(): QueryBuilder|Builder
     {
         return $this->builder;
     }
 
-    protected function page(): Builder
+    protected function page(): QueryBuilder|Builder
     {
         return $this->pageSize != 0
             ? $this->builder->skip($this->getSkip())->limit($this->pageSize) :
