@@ -1,0 +1,20 @@
+<?php
+
+namespace {{ namespace }};
+
+use Illuminate\Support\Collection;
+use M3Team\PagedIndex\DatabasePagedIndex;
+use Closure;
+
+class {{class}} extends DatabasePagedIndex
+{
+     protected function sort(): Builder
+     {
+         return $this->builder->orderBy($this->sortColumn, $this->sortDirection);
+     }
+
+     protected function filter(): Builder
+     {
+         return $this->builder;
+     }
+}

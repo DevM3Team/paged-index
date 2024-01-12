@@ -14,7 +14,7 @@ class PagedIndexMakeCommand extends GeneratorCommand
      *
      * @var string
      */
-    protected $signature = 'make:paged_index {name}';
+    protected $signature = 'make:paged_index {name} {--d|database}';
 
     /**
      * The console command description.
@@ -37,7 +37,10 @@ class PagedIndexMakeCommand extends GeneratorCommand
      */
     protected function getStub(): string
     {
-        return $this->resolveStubPath('/stubs/paged_index.stub');
+
+        return $this->hasOption('database')
+            ? $this->resolveStubPath('/stubs/db_paged_index.stub')
+            : $this->resolveStubPath('/stubs/paged_index.stub');
     }
 
     /**
@@ -60,6 +63,6 @@ class PagedIndexMakeCommand extends GeneratorCommand
      */
     protected function getDefaultNamespace($rootNamespace): string
     {
-        return $rootNamespace.'\Http\PagedIndexes';
+        return $rootNamespace . '\Http\PagedIndexes';
     }
 }

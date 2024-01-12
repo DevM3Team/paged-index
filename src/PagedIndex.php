@@ -2,23 +2,32 @@
 
 namespace M3Team\PagedIndex;
 
+use Closure;
 use Exception;
+use Illuminate\Contracts\Support\Jsonable;
 use Illuminate\Support\Collection;
-use JetBrains\PhpStorm\ArrayShape;
+use M3Team\PagedIndex\Http\Resources\PagedIndexCollection;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 
-abstract class PagedIndex
+/**
+ * @template T
+ */
+abstract class PagedIndex implements Jsonable
 {
-    const PAGE_INDEX = 'page_index';
-    const PAGE_SIZE = 'page_size';
-    const FILTER = 'filter';
-    const SORT_COLUMN = 'sort_column';
-    const SORT_DIRECTION = 'sort_direction';
+    public const PAGE_INDEX = 'page_index';
+    public const PAGE_SIZE = 'page_size';
+    public const FILTER = 'filter';
+    public const SORT_COLUMN = 'sort_column';
+    public const SORT_DIRECTION = 'sort_direction';
 
 
-    protected int $pageIndex, $pageSize, $sortColumn;
-    protected string $filter, $sortDirection;
+    /** @var class-string|null  */
+    protected string|null $resource = null;
+    protected int $pageIndex, $pageSize;
+    protected mixed $sortColumn;
+    protected ?string $filter;
+    protected ?string $sortDirection;
     protected Collection $collection;
 
     /**
@@ -31,14 +40,15 @@ abstract class PagedIndex
     {
         $this->pageIndex = request()->get(self::PAGE_INDEX, 0);
         $this->pageSize = request()->get(self::PAGE_SIZE, 0);
-        $this->filter = request()->get(self::FILTER, '');
-        $this->sortColumn = request()->get(self::SORT_COLUMN, 0);
+        $this->filter = request()->get(self::FILTER, null);
+        $this->sortColumn = request()->get(self::SORT_COLUMN, 'id');
         $this->sortDirection = request()->get(self::SORT_DIRECTION, 'asc');
         $this->collection = $collection;
     }
 
     /**
      * The number of models to skip according to page's size and page's index
+     *
      * Specifica come si sceglie quanti modelli skippare in base alla pagina
      * @return int
      */
@@ -52,21 +62,40 @@ abstract class PagedIndex
     }
 
     /**
+     * The function that defines the collection's order
+     *
+     * La funzione che definisce l'ordinamento della collection
+     * @return Closure
+     */
+    protected abstract function sortingFunction(): Closure;
+
+
+    /**
      * Orders the models' collection
+     *
      * Ordina la collection dell'oggetto e la ritorna ordinata
      * @return Collection The ordered collection | La collection ordinata
      */
-    protected abstract function sort(): Collection;
+    protected function sort(): Collection
+    {
+        return $this->sortDirection === 'asc' ? $this->collection->sortBy($this->sortingFunction()) :
+            $this->collection->sortByDesc($this->sortingFunction());
+    }
 
     /**
      * Filters the models' collection
+     *
      * Filtra la collection dell'oggetto e la ritorna filtrata
      * @return Collection The filtered collection | La collection filtrata
      */
-    protected abstract function filter(): Collection;
+    protected function filter(): Collection
+    {
+        return $this->collection->filter(fn($object) => $this->filterFunction($object));
+    }
 
     /**
      * Selects the models to return according to page's size and page's index
+     *
      * Seleziona il numero di oggetti da ritornare in base alla grandezza della pagina e al numero della pagina
      * @return Collection The paginated collection | La collection paginata
      */
@@ -80,25 +109,35 @@ abstract class PagedIndex
     /**
      * Return the computed collection
      * Ritorna gli oggetti elaborati
-     * @return array
+     * @return PagedIndexCollection
      */
-    #[ArrayShape([
-        "objects" => "\Illuminate\Support\Collection",
-        "total" => "int",
-        "page_index" => "int|mixed",
-        "page_size" => "int|mixed"
-    ])] public function getObjects(): array
+    public function getObjects(): PagedIndexCollection
     {
         $this->collection = $this->sort();
         $this->collection = $this->filter();
         $count = $this->collection->count();
         $this->collection = $this->page();
-        return [
-            "objects" => $this->collection->values(),
-            "total" => $count,
-            "page_index" => $this->pageIndex,
-            "page_size" => $this->pageSize
-        ];
+        return new PagedIndexCollection(
+            $this->resource === null ? $this->collection : ($this->resource)::collection($this->collection),
+            $count,
+            $this->pageIndex,
+            $this->pageSize
+        );
     }
+
+    public function toJson($options = 0): string
+    {
+        return $this->getObjects()->toJson($options);
+    }
+
+
+    /**
+     * The function that decides how to filter an element of the collection
+     *
+     * La funzione che decide come filtrare il singolo elemento della collezione
+     * @param T $object
+     * @return bool
+     */
+    protected abstract function filterFunction($object): bool;
 
 }
