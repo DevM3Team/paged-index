@@ -41,7 +41,7 @@ abstract class PagedIndex implements Jsonable
         $this->pageIndex = request()->get(self::PAGE_INDEX, 0);
         $this->pageSize = request()->get(self::PAGE_SIZE, 0);
         $this->filter = request()->get(self::FILTER, null);
-        $this->sortColumn = request()->get(self::SORT_COLUMN, 0);
+        $this->sortColumn = request()->get(self::SORT_COLUMN, 'id');
         $this->sortDirection = request()->get(self::SORT_DIRECTION, 'asc');
         $this->collection = $collection;
     }
