@@ -4,7 +4,7 @@ namespace M3Team\PagedIndex;
 
 use Exception;
 use Illuminate\Contracts\Support\Jsonable;
-use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use M3Team\PagedIndex\Http\Resources\PagedIndexCollection;
 
@@ -38,7 +38,7 @@ class DatabasePagedIndex implements Jsonable
         }
     }
 
-    public function __construct(protected QueryBuilder|Builder $builder)
+    public function __construct(protected QueryBuilder|EloquentBuilder $builder)
     {
         $this->pageIndex = request()->get(self::PAGE_INDEX, 0);
         $this->pageSize = request()->get(self::PAGE_SIZE, 0);
@@ -47,17 +47,17 @@ class DatabasePagedIndex implements Jsonable
         $this->sortDirection = request()->get(self::SORT_DIRECTION, 'asc');
     }
 
-    protected function sort(): QueryBuilder|Builder
+    protected function sort(): QueryBuilder|EloquentBuilder
     {
         return $this->builder->orderBy($this->sortColumn, $this->sortDirection);
     }
 
-    protected function filter(): QueryBuilder|Builder
+    protected function filter(): QueryBuilder|EloquentBuilder
     {
         return $this->builder;
     }
 
-    protected function page(): QueryBuilder|Builder
+    protected function page(): QueryBuilder|EloquentBuilder
     {
         return $this->pageSize != 0
             ? $this->builder->skip($this->getSkip())->limit($this->pageSize) :

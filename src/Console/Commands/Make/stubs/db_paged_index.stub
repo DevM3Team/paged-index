@@ -2,18 +2,18 @@
 
 namespace {{ namespace }};
 
-use Illuminate\Support\Collection;
 use M3Team\PagedIndex\DatabasePagedIndex;
-use Closure;
+use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 
 class {{class}} extends DatabasePagedIndex
 {
-     protected function sort(): Builder
+     protected function sort(): QueryBuilder|EloquentBuilder
      {
          return $this->builder->orderBy($this->sortColumn, $this->sortDirection);
      }
 
-     protected function filter(): Builder
+     protected function filter(): QueryBuilder|EloquentBuilder
      {
          return $this->builder;
      }
