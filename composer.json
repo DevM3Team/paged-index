@@ -2,7 +2,7 @@
     "name": "m3team/paged-index",
     "description": "Simple package to deal with dynamic frontend's datasources",
     "type": "library",
-    "version": "4.6.1",
+    "version": "4.6.2",
     "authors": [
         {
             "name": "Ares Bagatin",
@@ -10,7 +10,7 @@
         }
     ],
     "require": {
-        "laravel/framework": "^9.0|^10.0|^11.0"
+        "laravel/framework": "^9.0|^10.0|^11.0|^12.0"
     },
     "require-dev": {
         "phpunit/phpunit": "~9.5.9|~10.0",
