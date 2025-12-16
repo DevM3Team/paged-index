@@ -24,7 +24,7 @@ final readonly class PagedIndex implements Jsonable {
             config('paged-index.request_keys.page_index', "page_index") => ["nullable", "integer"],
             config('paged-index.request_keys.page_size', "page_size") => ["nullable", "integer"],
             config('paged-index.request_keys.sort_column', "sort_column") => ["nullable", "string"],
-            config('paged-index.request_keys.sort_direction', "sort_direction") => ["nullable", "string"],
+            config('paged-index.request_keys.sort_direction', "sort_direction") => ["nullable", "in:asc,desc"],
             config('paged-index.request_keys.filters', "filters") => ["nullable", "array"],
             config('paged-index.request_keys.filters', "filters") . ".*" => ["required", "string"],
             config('paged-index.request_keys.relationships', "relationships") => ["nullable", "array"],
@@ -33,7 +33,7 @@ final readonly class PagedIndex implements Jsonable {
     }
 
     public static function fromRequest(EloquentBuilder|QueryBuilder $builder, ?string $resource = null): self {
-        $data = Validator::validate(request()->all(), self::rules());
+        $data = Validator::validate(request()->query(), self::rules());
         return new self(
             $builder,
             $resource,

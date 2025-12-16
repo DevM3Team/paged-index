@@ -23,7 +23,7 @@ class PagedIndexServiceProvider extends ServiceProvider
     public function boot(): void {
         $this->publishes([
             __DIR__.'/../config/paged-index.php' => config_path('paged-index.php'),
-        ]);
+        ], 'paged-index-config');
         $this->commands([
             PagedIndexMakeCommand::class
         ]);
