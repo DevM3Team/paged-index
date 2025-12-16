@@ -4,7 +4,7 @@ namespace M3Team\PagedIndex\Pipes;
 
 use Illuminate\Database\Eloquent\Builder;
 
-class RelationshipsPipe {
+final readonly class RelationshipsPipe {
     public function __construct(protected array $relationships) {
     }
 

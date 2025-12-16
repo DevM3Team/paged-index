@@ -5,7 +5,7 @@ namespace M3Team\PagedIndex\Pipes;
 use Closure;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class TransformPipe {
+final readonly class TransformPipe {
     /**
      * @param class-string|null $resource
      */

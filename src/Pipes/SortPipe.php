@@ -5,7 +5,7 @@ namespace M3Team\PagedIndex\Pipes;
 use Closure;
 use Illuminate\Support\Arr;
 
-class SortPipe {
+final readonly class SortPipe {
     public function __construct(protected string $sortKey, protected string $sortDirection = 'asc', protected array $sortable = []) {
     }
 
