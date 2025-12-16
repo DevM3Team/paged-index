@@ -3,8 +3,9 @@
 namespace M3Team\PagedIndex\Pipes;
 
 use Illuminate\Contracts\Database\Query\Builder;
+use Illuminate\Support\Arr;
 
-class FilterPipe {
+final readonly class FilterPipe {
     /**
      * @param array<string, mixed> $filters         User-supplied values (e.g. from request)
      * @param array<string, string|callable(Builder, mixed): void> $filterables
@@ -12,21 +13,24 @@ class FilterPipe {
     public function __construct(
         protected array $filters = [],
         protected array $filterables = []
-    ) {}
+    ) {
+    }
 
     public function handle($builder, \Closure $next)
     {
+        $filterables = Arr::mapWithKeys($this->filterables, fn ($value, $key) => is_int($key) && is_string($value) ? [$value => $value] : [$key => $value]);
+
         foreach ($this->filters as $key => $value) {
-            if (!array_key_exists($key, $this->filterables) || $value === null) {
+            if (!array_key_exists($key, $filterables) || $value === null) {
                 continue;
             }
 
-            $config = $this->filterables[$key];
+            $config = $filterables[$key];
 
             if (is_callable($config)) {
-                $config($builder, $value); // custom logic
+                $config($builder, $value);
             } else {
-                $builder->where($config, $value); // simple column = value
+                $builder->where($config, $value);
             }
         }
 

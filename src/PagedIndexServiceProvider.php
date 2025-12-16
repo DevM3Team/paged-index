@@ -11,8 +11,10 @@ class PagedIndexServiceProvider extends ServiceProvider
      * Bootstrap of the services
      * @return void
      */
-    public function boot()
-    {
+    public function boot(): void {
+        $this->publishes([
+            __DIR__.'/../config/paged-index.php' => config_path('paged-index.php'),
+        ]);
         $this->commands([
             PagedIndexMakeCommand::class
         ]);
