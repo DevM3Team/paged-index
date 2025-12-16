@@ -43,6 +43,8 @@ final readonly class PagedIndex implements Jsonable {
             $data[config('paged-index.request_keys.sort_direction', "sort_direction")] ?? config('paged-index.defaults.sort_direction', 'asc'),
             $data[config('paged-index.request_keys.filters', "filters")] ?? [],
             $data[config('paged-index.request_keys.relationships', "relationships")] ?? [],
+            [],
+            []
         );
     }
 

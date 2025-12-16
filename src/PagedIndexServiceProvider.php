@@ -7,6 +7,15 @@ use M3Team\PagedIndex\Console\Commands\Make\PagedIndexMakeCommand;
 
 class PagedIndexServiceProvider extends ServiceProvider
 {
+
+    public function register(): void
+    {
+        $this->mergeConfigFrom(
+            __DIR__ . '/../config/paged-index.php',
+            'paged-index'
+        );
+    }
+
     /**
      * Bootstrap of the services
      * @return void
