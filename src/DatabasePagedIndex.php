@@ -11,7 +11,7 @@ use M3Team\PagedIndex\Http\Resources\PagedIndexCollection;
 use M3Team\PagedIndex\Pipes\PaginationPipe;
 
 /**
- * @deprecated since version `5.0.0`. Will be removed in version 6.
+ * @deprecated since version `5.0.0`. Will be removed in version 7.
  * Use `PagedIndex` instead.
  */
 class DatabasePagedIndex implements Jsonable {

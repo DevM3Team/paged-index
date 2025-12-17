@@ -2,13 +2,11 @@
 
 namespace M3Team\PagedIndex;
 
-use Closure;
-use Exception;
 use Illuminate\Contracts\Support\Jsonable;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Pipeline\Pipeline;
-use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Validator;
 use M3Team\PagedIndex\Http\Resources\PagedIndexCollection;
 use M3Team\PagedIndex\Pipes\FilterPipe;
 use M3Team\PagedIndex\Pipes\PaginationPipe;
@@ -16,53 +14,119 @@ use M3Team\PagedIndex\Pipes\RelationshipsPipe;
 use M3Team\PagedIndex\Pipes\SortPipe;
 use M3Team\PagedIndex\Pipes\ToPagedIndexCollectionPipe;
 use M3Team\PagedIndex\Pipes\TransformPipe;
-use Psr\Container\ContainerExceptionInterface;
-use Psr\Container\NotFoundExceptionInterface;
 
 /**
  * @template T
  */
-class PagedIndex implements Jsonable {
-    public const PAGE_INDEX = 'page_index';
-    public const PAGE_SIZE = 'page_size';
-    public const FILTER = 'filter';
-    public const SORT_COLUMN = 'sort_column';
-    public const SORT_DIRECTION = 'sort_direction';
+final readonly class PagedIndex implements Jsonable {
+    private static function rules(): array {
+        return [
+            config('paged-index.request_keys.page_index', "page_index") => ["nullable", "integer"],
+            config('paged-index.request_keys.page_size', "page_size") => ["nullable", "integer"],
+            config('paged-index.request_keys.sort_column', "sort_column") => ["nullable", "string"],
+            config('paged-index.request_keys.sort_direction', "sort_direction") => ["nullable", "in:asc,desc"],
+            config('paged-index.request_keys.filters', "filters") => ["nullable", "array"],
+            config('paged-index.request_keys.filters', "filters") . ".*" => ["required", "string"],
+            config('paged-index.request_keys.relationships', "relationships") => ["nullable", "array"],
+            config('paged-index.request_keys.relationships', "relationships") . ".*" => ["required", "string"],
+        ];
+    }
 
-    /** @var class-string|null */
-    protected string|null $resource = null;
-    protected int $pageIndex, $pageSize;
-    protected mixed $sortColumn;
-    protected ?string $filter;
-    protected ?array $filters;
+    public static function fromRequest(EloquentBuilder|QueryBuilder $builder, ?string $resource = null): self {
+        $data = Validator::validate(request()->query(), self::rules());
+        return new self(
+            $builder,
+            $resource,
+            $data[config('paged-index.request_keys.page_index', "page_index")] ?? 0,
+            $data[config('paged-index.request_keys.page_size', "page_size")] ?? 0,
+            $data[config('paged-index.request_keys.sort_column', "sort_column")] ?? config('paged-index.defaults.sort_column', 'id'),
+            $data[config('paged-index.request_keys.sort_direction', "sort_direction")] ?? config('paged-index.defaults.sort_direction', 'asc'),
+            $data[config('paged-index.request_keys.filters', "filters")] ?? [],
+            $data[config('paged-index.request_keys.relationships', "relationships")] ?? [],
+            [],
+            []
+        );
+    }
+
+    protected ?int $pageIndex;
+    protected ?int $pageSize;
+    protected ?string $sortColumn;
     protected ?string $sortDirection;
-    private array $relationships = [];
+    /** @var string[] */
+    protected array $filters;
+    /** @var string[] */
+    protected array $relationships;
+
+    /** @var array<string, string|callable(QueryBuilder|EloquentBuilder, 'asc'|'desc'): void> */
+    private array $allowedSorts;
+
+    /** @var array<string, string|callable(QueryBuilder|EloquentBuilder, mixed): void> */
+    private array $allowedFilters;
 
     /**
-     * @param array{
-     *     page_index: int,
-     *     page_size: int,
-     *     sort_column: string,
-     *     sort_direction: 'asc'|'desc'
-     * } $params
-     * @throws ContainerExceptionInterface
-     * @throws NotFoundExceptionInterface
+     * @param QueryBuilder|EloquentBuilder $builder
+     * @param class-string|null $resource
+     * @param int|null $pageIndex
+     * @param int|null $pageSize
+     * @param string|null $sortColumn
+     * @param string|null $sortDirection
+     * @param string[] $filters
+     * @param string[] $relationships
      */
-    public function __construct(protected QueryBuilder|EloquentBuilder $builder, array $params) {
-        $this->pageIndex = request()->get(self::PAGE_INDEX, 0);
-        $this->pageSize = request()->get(self::PAGE_SIZE, 0);
-        $this->filter = request()->get(self::FILTER, null);
-        $this->sortColumn = request()->get(self::SORT_COLUMN, 'id');
-        $this->sortDirection = request()->get(self::SORT_DIRECTION, 'asc');
-        $this->relationships = request()->collect('relationships')->toArray();
+    public function __construct(
+        protected QueryBuilder|EloquentBuilder $builder,
+        protected string|null                  $resource = null,
+        ?int                                   $pageIndex = null,
+        ?int                                   $pageSize = null,
+        ?string                                $sortColumn = null,
+        ?string                                $sortDirection = null,
+        array                                  $filters = [],
+        array                                  $relationships = [],
+        array                                  $allowedSorts = [],
+        array                                  $allowedFilters = []
+    ) {
+        $this->pageIndex = $pageIndex ?? 0;
+        $this->pageSize = $pageSize ?? 0;
+        $this->sortColumn = $sortColumn ?? config('paged-index.defaults.sort_column', 'id');
+        $this->sortDirection = $sortDirection ?? config('paged-index.defaults.sort_direction', 'asc');
+        $this->filters = $filters;
+        $this->relationships = $relationships;
+        $this->allowedSorts = $allowedSorts;
+        $this->allowedFilters = $allowedFilters;
     }
 
-    protected function getSortBehaviors(): array {
-        return [];
+    public function allowedSorts(array $sorts, bool $merge = true): self {
+        $allowed = $merge ? array_replace($this->allowedSorts, $sorts) : $sorts;
+
+        return new self(
+            builder: $this->builder,
+            resource: $this->resource,
+            pageIndex: $this->pageIndex,
+            pageSize: $this->pageSize,
+            sortColumn: $this->sortColumn,
+            sortDirection: $this->sortDirection,
+            filters: $this->filters,
+            relationships: $this->relationships,
+            allowedSorts: $allowed,
+            allowedFilters: $this->allowedFilters,
+        );
     }
 
-    protected function getFilterables(): array {
-        return [];
+    public function allowedFilters(array $filters, bool $merge = true): self {
+        $allowed = $merge ? array_replace($this->allowedFilters, $filters) : $filters;
+
+        return new self(
+            builder: $this->builder,
+            resource: $this->resource,
+            pageIndex: $this->pageIndex,
+            pageSize: $this->pageSize,
+            sortColumn: $this->sortColumn,
+            sortDirection: $this->sortDirection,
+            filters: $this->filters,
+            relationships: $this->relationships,
+            allowedSorts: $this->allowedSorts,
+            allowedFilters: $allowed,
+        );
     }
 
     protected function applyPipeline($builder, array $pipes) {
@@ -75,8 +139,8 @@ class PagedIndex implements Jsonable {
     public function getObjects(): PagedIndexCollection {
         $filtered = $this->applyPipeline($this->builder->clone(), [
             new RelationshipsPipe($this->relationships),
-            new SortPipe($this->sortColumn, $this->sortDirection, $this->getSortBehaviors()),
-            new FilterPipe($this->filters ?? [], $this->getFilterables())
+            new SortPipe($this->sortColumn, $this->sortDirection, $this->allowedSorts),
+            new FilterPipe($this->filters ?? [], $this->allowedFilters)
         ]);
         $count = $filtered->clone()->count();
         return $this->applyPipeline($filtered, [
