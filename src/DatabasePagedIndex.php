@@ -6,10 +6,15 @@ use Exception;
 use Illuminate\Contracts\Support\Jsonable;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
+use Illuminate\Pipeline\Pipeline;
 use M3Team\PagedIndex\Http\Resources\PagedIndexCollection;
+use M3Team\PagedIndex\Pipes\PaginationPipe;
 
-class DatabasePagedIndex implements Jsonable
-{
+/**
+ * @deprecated since version `5.0.0`. Will be removed in version 7.
+ * Use `PagedIndex` instead.
+ */
+class DatabasePagedIndex implements Jsonable {
     public const PAGE_INDEX = 'page_index';
     public const PAGE_SIZE = 'page_size';
     public const FILTER = 'filter';
@@ -23,12 +28,6 @@ class DatabasePagedIndex implements Jsonable
     protected ?string $filter;
     protected ?string $sortDirection;
 
-    /**
-     * The number of models to skip according to page's size and page's index
-     *
-     * Specifica come si sceglie quanti modelli skippare in base alla pagina
-     * @return int
-     */
     protected function getSkip(): int
     {
         try {

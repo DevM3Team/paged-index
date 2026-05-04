@@ -1,80 +1,79 @@
-# PagedIndex #
+# Paged Index for Laravel
 
-## EN ##
+Paged Index helps you build server-driven, paginated listings in Laravel applications. It exposes a fluent API for combining filtering, sorting, eager-loading relationships, pagination, and optional resource transformation into a single response object.
 
-### What is this package for? ###
-This package offers a class that creates a quick implementation of a server-sided loading table. The class deals with
-sorting, filtering and paginating functions.
+## Requirements
+- Laravel 11 or 12
 
-### How to use it? ###
+## Installation
+1. Install the package:
+   ```bash
+   composer require m3team/paged-index
+   ```
+2. (Optional) Publish the configuration to customize request key names and defaults:
+   ```bash
+   php artisan vendor:publish --tag=paged-index-config
+   ```
 
-The keys of the request are 5:
-- `filter`: the string value passed to the filtering function.
-- `page_index`: the index of the page, it's an integer.
-- `page_size`: the size of the pages, it's an integer.
-- `sort_column`: the integer that represents the column passed to the sorting function.
-- `sort_direction`: the direction of the sorting it can be "asc" or "desc".
+## Request keys
+By default, the library reads these query-string keys (all configurable in `config/paged-index.php`):
+- `page_index` – zero-based page number.
+- `page_size` – number of items per page.
+- `sort_column` – allowed column or key defined via `allowedSorts()`.
+- `sort_direction` – `asc` or `desc`.
+- `filters[]` – keyed filter values matched against `allowedFilters()`.
+- `relationships[]` – relationships to eager load when using an Eloquent builder, subject to `allowedRelationships()`.
 
-The `PagedIndex` abstract class has got 2 abstract methods, `sort` and `filter`.
+## Quick start
+Use `PagedIndex::fromRequest()` to turn an Eloquent or query builder into a paginated response.
 
-There is an Artisan Command that creates a model referred PagedIndex. 
+```php
+use App\Http\Resources\UserResource;
+use App\Models\User;
+use M3Team\PagedIndex\PagedIndex;
 
-### Examples ###
-```shell
-    php artisan make:paged_index ModelPagedIndex
-```
-
-It creates an extension of the `PagedIndex` abstract class, the class will be saved inside `app/Http/PagedIndexes`.
-
-
-This is the way to use a simple model related PagedIndex:
-```injectablephp
-use Illuminate\Database\Eloquent\Collection;use Illuminate\Http\Request;
-
-//CONTROLLER CLASS
-
-public function index(Collection $collection){
-    $p = new ModelPagedIndex($collection);
-    return new Response($p->getObjects());
+class UserController
+{
+    public function index()
+    {
+        return PagedIndex::fromRequest(User::query(), UserResource::class)
+            ->allowedSorts(['id', 'name', 'email'])
+            ->allowedFilters([
+                'name' => 'name',                 // simple where
+                'email' => fn ($q, $value) => $q->where('email', 'like', "%{$value}%"),
+            ])
+            ->allowedRelationships([
+                'posts',
+                'profile' => fn ($query) => $query->where('active', true),
+            ])
+            ->getObjects();
+    }
 }
 ```
 
-
-
-## IT ##
-
-### A cosa serve questa repo? ###
-
-Questo package offre una classe che permette di creare una veloce implementazione di tabelle caricate nel lato server.
-Di default permette di implementare funzioni di ordinamento, filtro e paginazione.
-
-### Come si usa? ###
-
-Le key delle richieste sono 5:
-- `filter`: la stringa passata alla funzione di filtro.
-- `page_index`: l'indice della pagina, è un integer.
-- `page_size`: il numero di oggetti per pagina, è un integer.
-- `sort_column`: l'intero che rappresenta la colonna passata alla funzione di ordinamento.
-- `sort_direction`: il valore della direzione dell'ordinamento, può essere "asc" per l'ordine crescente e "desc" per decresente.
-
-La classe astratta `PagedIndex` ha 2 metodi da implementare, `sort` per l'ordinamento e `filter` per il filtro.
-
-C'è un comando Artisan che crea un PagedIndex.
-
-### Esempi ###
-```shell
-    php artisan make:paged_index ModelPagedIndex
-```
-Crea un estensione della classe astratta `PagedIndex`, la classe sarà salvata all'interno di `app/Http/PagedIndexes`.
-
-Questo è un esempio di come si usa un semplice PagedIndex:
-```injectablephp
-use Illuminate\Database\Eloquent\Collection;use Illuminate\Http\Request;
-
-//CONTROLLER CLASS
-
-public function index(Collection $collection){
-    $p = new ModelPagedIndex($collection);
-    return new Response($p->getObjects());
+The returned `PagedIndexCollection` JSON structure is:
+```json
+{
+  "objects": [/* transformed items */],
+  "total": 42,
+  "page_index": 0,
+  "page_size": 15
 }
 ```
+
+### How it works
+1. Query parameters are validated and merged with defaults.
+2. Allowed relationships are eager loaded only when they are allowlisted with `allowedRelationships()` and only on Eloquent builders.
+3. Sorting and filtering are applied using the `allowedSorts`/`allowedFilters` map you provide. Each entry can be a column name or a closure receiving the builder.
+4. Pagination skips/limits the query when `page_size` is greater than zero.
+5. The collection is optionally transformed with a Laravel API resource class, then wrapped in `PagedIndexCollection`.
+
+## Generator command
+Create a plain application class for paged-index composition:
+```bash
+php artisan make:paged_index UserPagedIndex
+```
+Classes are placed in `app/Http/PagedIndexes`.
+
+## Deprecated class
+The legacy `DatabasePagedIndex` remains for backward compatibility but is deprecated as of v5. Use `PagedIndex` for new code.

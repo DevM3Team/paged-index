@@ -2,33 +2,30 @@
 
 namespace M3Team\PagedIndex\Console\Commands\Make;
 
-use Illuminate\Console\Concerns\CreatesMatchingTest;
 use Illuminate\Console\GeneratorCommand;
 
 class PagedIndexMakeCommand extends GeneratorCommand
 {
-    use CreatesMatchingTest;
-
     /**
      * The name and signature of the console command.
      *
      * @var string
      */
-    protected $signature = 'make:paged_index {name} {--d|database}';
+    protected $signature = 'make:paged_index {name}';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Create a new Paged Index class';
+    protected $description = 'Create a new application class for paged-index composition';
 
     /**
      * The type of class being generated.
      *
      * @var string
      */
-    protected $type = 'PagedIndex';
+    protected $type = 'Class';
 
     /**
      * Get the stub file for the generator.
@@ -37,22 +34,7 @@ class PagedIndexMakeCommand extends GeneratorCommand
      */
     protected function getStub(): string
     {
-
-        return $this->hasOption('database')
-            ? $this->resolveStubPath('/stubs/db_paged_index.stub')
-            : $this->resolveStubPath('/stubs/paged_index.stub');
-    }
-
-    /**
-     * Resolve the fully-qualified path to the stub.
-     *
-     * @param string $stub
-     * @return string
-     */
-    protected function resolveStubPath(string $stub): string
-    {
-        return file_exists($customPath = $this->laravel->basePath(trim($stub, '/')))
-            ? $customPath : __DIR__ . $stub;
+        return base_path('vendor/laravel/framework/src/Illuminate/Foundation/Console/stubs/class.stub');
     }
 
     /**

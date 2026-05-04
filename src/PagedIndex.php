@@ -2,142 +2,219 @@
 
 namespace M3Team\PagedIndex;
 
-use Closure;
-use Exception;
 use Illuminate\Contracts\Support\Jsonable;
-use Illuminate\Support\Collection;
+use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
+use Illuminate\Database\Query\Builder as QueryBuilder;
+use Illuminate\Pipeline\Pipeline;
+use Illuminate\Support\Facades\Validator;
 use M3Team\PagedIndex\Http\Resources\PagedIndexCollection;
-use Psr\Container\ContainerExceptionInterface;
-use Psr\Container\NotFoundExceptionInterface;
+use M3Team\PagedIndex\Pipes\FilterPipe;
+use M3Team\PagedIndex\Pipes\PaginationPipe;
+use M3Team\PagedIndex\Pipes\RelationshipsPipe;
+use M3Team\PagedIndex\Pipes\SortPipe;
+use M3Team\PagedIndex\Pipes\ToPagedIndexCollectionPipe;
+use M3Team\PagedIndex\Pipes\TransformPipe;
 
 /**
  * @template T
  */
-abstract class PagedIndex implements Jsonable
+final readonly class PagedIndex implements Jsonable
 {
-    public const PAGE_INDEX = 'page_index';
-    public const PAGE_SIZE = 'page_size';
-    public const FILTER = 'filter';
-    public const SORT_COLUMN = 'sort_column';
-    public const SORT_DIRECTION = 'sort_direction';
-
-
-    /** @var class-string|null  */
-    protected string|null $resource = null;
-    protected int $pageIndex, $pageSize;
-    protected mixed $sortColumn;
-    protected ?string $filter;
-    protected ?string $sortDirection;
-    protected Collection $collection;
-
-    /**
-     * The constructor takes the values from the request if specified otherwise will use default values
-     * Costruttore che prende dalla richiesta i valori oppure ci assegna il valore di default
-     * @param Collection $collection
-     * @throws NotFoundExceptionInterface|ContainerExceptionInterface
-     */
-    public function __construct(Collection $collection)
+    private static function rules(): array
     {
-        $this->pageIndex = request()->get(self::PAGE_INDEX, 0);
-        $this->pageSize = request()->get(self::PAGE_SIZE, 0);
-        $this->filter = request()->get(self::FILTER, null);
-        $this->sortColumn = request()->get(self::SORT_COLUMN, 'id');
-        $this->sortDirection = request()->get(self::SORT_DIRECTION, 'asc');
-        $this->collection = $collection;
+        return [
+            config('paged-index.request_keys.page_index', 'page_index') => ['nullable', 'integer'],
+            config('paged-index.request_keys.page_size', 'page_size') => ['nullable', 'integer'],
+            config('paged-index.request_keys.sort_column', 'sort_column') => ['nullable', 'string'],
+            config('paged-index.request_keys.sort_direction', 'sort_direction') => ['nullable', 'in:asc,desc'],
+            config('paged-index.request_keys.filters', 'filters') => ['nullable', 'array'],
+            config('paged-index.request_keys.filters', 'filters').'.*' => ['required', 'string'],
+            config('paged-index.request_keys.relationships', 'relationships') => ['nullable', 'array'],
+            config('paged-index.request_keys.relationships', 'relationships').'.*' => ['required', 'string'],
+        ];
     }
 
     /**
-     * The number of models to skip according to page's size and page's index
-     *
-     * Specifica come si sceglie quanti modelli skippare in base alla pagina
-     * @return int
+     * @param  array<int|string, string|callable>  $relationships
+     * @return array<string, string|callable>
      */
-    protected function getSkip(): int
+    private static function normalizeRelationships(array $relationships): array
     {
-        try {
-            return $this->pageIndex * $this->pageSize;
-        } catch (Exception $e) {
-            return 0;
+        $normalized = [];
+
+        foreach ($relationships as $key => $value) {
+            if (is_int($key) && is_string($value)) {
+                $normalized[$value] = $value;
+
+                continue;
+            }
+
+            if (is_string($key)) {
+                $normalized[$key] = $value;
+            }
         }
+
+        return $normalized;
     }
 
-    /**
-     * The function that defines the collection's order
-     *
-     * La funzione che definisce l'ordinamento della collection
-     * @return Closure
-     */
-    protected abstract function sortingFunction(): Closure;
-
-
-    /**
-     * Orders the models' collection
-     *
-     * Ordina la collection dell'oggetto e la ritorna ordinata
-     * @return Collection The ordered collection | La collection ordinata
-     */
-    protected function sort(): Collection
+    public static function fromRequest(EloquentBuilder|QueryBuilder $builder, ?string $resource = null): self
     {
-        return $this->sortDirection === 'asc' ? $this->collection->sortBy($this->sortingFunction()) :
-            $this->collection->sortByDesc($this->sortingFunction());
+        $data = Validator::validate(request()->query(), self::rules());
+
+        return new self(
+            $builder,
+            $resource,
+            $data[config('paged-index.request_keys.page_index', 'page_index')] ?? 0,
+            $data[config('paged-index.request_keys.page_size', 'page_size')] ?? 0,
+            $data[config('paged-index.request_keys.sort_column', 'sort_column')] ?? config('paged-index.defaults.sort_column', 'id'),
+            $data[config('paged-index.request_keys.sort_direction', 'sort_direction')] ?? config('paged-index.defaults.sort_direction', 'asc'),
+            $data[config('paged-index.request_keys.filters', 'filters')] ?? [],
+            $data[config('paged-index.request_keys.relationships', 'relationships')] ?? [],
+            [],
+            [],
+            []
+        );
     }
 
+    protected ?int $pageIndex;
+
+    protected ?int $pageSize;
+
+    protected ?string $sortColumn;
+
+    protected ?string $sortDirection;
+
+    /** @var string[] */
+    protected array $filters;
+
+    /** @var string[] */
+    protected array $relationships;
+
+    /** @var array<string, string|callable(QueryBuilder|EloquentBuilder, 'asc'|'desc'): void> */
+    private array $allowedSorts;
+
+    /** @var array<string, string|callable(QueryBuilder|EloquentBuilder, mixed): void> */
+    private array $allowedFilters;
+
+    /** @var array<string, string|callable> */
+    private array $allowedRelationships;
+
     /**
-     * Filters the models' collection
-     *
-     * Filtra la collection dell'oggetto e la ritorna filtrata
-     * @return Collection The filtered collection | La collection filtrata
+     * @param  class-string|null  $resource
+     * @param  string[]  $filters
+     * @param  string[]  $relationships
      */
-    protected function filter(): Collection
+    public function __construct(
+        protected QueryBuilder|EloquentBuilder $builder,
+        protected ?string $resource = null,
+        ?int $pageIndex = null,
+        ?int $pageSize = null,
+        ?string $sortColumn = null,
+        ?string $sortDirection = null,
+        array $filters = [],
+        array $relationships = [],
+        array $allowedSorts = [],
+        array $allowedFilters = [],
+        array $allowedRelationships = []
+    ) {
+        $this->pageIndex = $pageIndex ?? 0;
+        $this->pageSize = $pageSize ?? 0;
+        $this->sortColumn = $sortColumn ?? config('paged-index.defaults.sort_column', 'id');
+        $this->sortDirection = $sortDirection ?? config('paged-index.defaults.sort_direction', 'asc');
+        $this->filters = $filters;
+        $this->relationships = $relationships;
+        $this->allowedSorts = $allowedSorts;
+        $this->allowedFilters = $allowedFilters;
+        $this->allowedRelationships = self::normalizeRelationships($allowedRelationships);
+    }
+
+    public function allowedSorts(array $sorts, bool $merge = true): self
     {
-        return $this->collection->filter(fn($object) => $this->filterFunction($object));
+        $allowed = $merge ? array_replace($this->allowedSorts, $sorts) : $sorts;
+
+        return new self(
+            builder: $this->builder,
+            resource: $this->resource,
+            pageIndex: $this->pageIndex,
+            pageSize: $this->pageSize,
+            sortColumn: $this->sortColumn,
+            sortDirection: $this->sortDirection,
+            filters: $this->filters,
+            relationships: $this->relationships,
+            allowedSorts: $allowed,
+            allowedFilters: $this->allowedFilters,
+            allowedRelationships: $this->allowedRelationships,
+        );
     }
 
-    /**
-     * Selects the models to return according to page's size and page's index
-     *
-     * Seleziona il numero di oggetti da ritornare in base alla grandezza della pagina e al numero della pagina
-     * @return Collection The paginated collection | La collection paginata
-     */
-    protected function page(): Collection
+    public function allowedFilters(array $filters, bool $merge = true): self
     {
-        return $this->pageSize != 0
-            ? $this->collection->skip($this->getSkip())->take($this->pageSize) :
-            $this->collection;
+        $allowed = $merge ? array_replace($this->allowedFilters, $filters) : $filters;
+
+        return new self(
+            builder: $this->builder,
+            resource: $this->resource,
+            pageIndex: $this->pageIndex,
+            pageSize: $this->pageSize,
+            sortColumn: $this->sortColumn,
+            sortDirection: $this->sortDirection,
+            filters: $this->filters,
+            relationships: $this->relationships,
+            allowedSorts: $this->allowedSorts,
+            allowedFilters: $allowed,
+            allowedRelationships: $this->allowedRelationships,
+        );
     }
 
-    /**
-     * Return the computed collection
-     * Ritorna gli oggetti elaborati
-     * @return PagedIndexCollection
-     */
+    public function allowedRelationships(array $relationships, bool $merge = true): self
+    {
+        $allowedRelationships = self::normalizeRelationships($relationships);
+        $allowed = $merge
+            ? array_replace($this->allowedRelationships, $allowedRelationships)
+            : $allowedRelationships;
+
+        return new self(
+            builder: $this->builder,
+            resource: $this->resource,
+            pageIndex: $this->pageIndex,
+            pageSize: $this->pageSize,
+            sortColumn: $this->sortColumn,
+            sortDirection: $this->sortDirection,
+            filters: $this->filters,
+            relationships: $this->relationships,
+            allowedSorts: $this->allowedSorts,
+            allowedFilters: $this->allowedFilters,
+            allowedRelationships: $allowed,
+        );
+    }
+
+    protected function applyPipeline($builder, array $pipes)
+    {
+        return app(Pipeline::class)
+            ->send($builder)
+            ->through($pipes)
+            ->thenReturn();
+    }
+
     public function getObjects(): PagedIndexCollection
     {
-        $this->collection = $this->sort();
-        $this->collection = $this->filter();
-        $count = $this->collection->count();
-        $this->collection = $this->page();
-        return new PagedIndexCollection(
-            $this->resource === null ? $this->collection : ($this->resource)::collection($this->collection),
-            $count,
-            $this->pageIndex,
-            $this->pageSize
-        );
+        $filtered = $this->applyPipeline($this->builder->clone(), [
+            new RelationshipsPipe($this->relationships, $this->allowedRelationships),
+            new SortPipe($this->sortColumn, $this->sortDirection, $this->allowedSorts),
+            new FilterPipe($this->filters ?? [], $this->allowedFilters),
+        ]);
+
+        $count = $filtered->clone()->count();
+
+        return $this->applyPipeline($filtered, [
+            new PaginationPipe($this->pageIndex ?? 0, $this->pageSize ?? 0),
+            new TransformPipe($this->resource),
+            new ToPagedIndexCollectionPipe($count, $this->pageIndex, $this->pageSize),
+        ]);
     }
 
     public function toJson($options = 0): string
     {
         return $this->getObjects()->toJson($options);
     }
-
-
-    /**
-     * The function that decides how to filter an element of the collection
-     *
-     * La funzione che decide come filtrare il singolo elemento della collezione
-     * @param T $object
-     * @return bool
-     */
-    protected abstract function filterFunction($object): bool;
-
 }
