@@ -18,42 +18,75 @@ use M3Team\PagedIndex\Pipes\TransformPipe;
 /**
  * @template T
  */
-final readonly class PagedIndex implements Jsonable {
-    private static function rules(): array {
+final readonly class PagedIndex implements Jsonable
+{
+    private static function rules(): array
+    {
         return [
-            config('paged-index.request_keys.page_index', "page_index") => ["nullable", "integer"],
-            config('paged-index.request_keys.page_size', "page_size") => ["nullable", "integer"],
-            config('paged-index.request_keys.sort_column', "sort_column") => ["nullable", "string"],
-            config('paged-index.request_keys.sort_direction', "sort_direction") => ["nullable", "in:asc,desc"],
-            config('paged-index.request_keys.filters', "filters") => ["nullable", "array"],
-            config('paged-index.request_keys.filters', "filters") . ".*" => ["required", "string"],
-            config('paged-index.request_keys.relationships', "relationships") => ["nullable", "array"],
-            config('paged-index.request_keys.relationships', "relationships") . ".*" => ["required", "string"],
+            config('paged-index.request_keys.page_index', 'page_index') => ['nullable', 'integer'],
+            config('paged-index.request_keys.page_size', 'page_size') => ['nullable', 'integer'],
+            config('paged-index.request_keys.sort_column', 'sort_column') => ['nullable', 'string'],
+            config('paged-index.request_keys.sort_direction', 'sort_direction') => ['nullable', 'in:asc,desc'],
+            config('paged-index.request_keys.filters', 'filters') => ['nullable', 'array'],
+            config('paged-index.request_keys.filters', 'filters').'.*' => ['required', 'string'],
+            config('paged-index.request_keys.relationships', 'relationships') => ['nullable', 'array'],
+            config('paged-index.request_keys.relationships', 'relationships').'.*' => ['required', 'string'],
         ];
     }
 
-    public static function fromRequest(EloquentBuilder|QueryBuilder $builder, ?string $resource = null): self {
+    /**
+     * @param  array<int|string, string|callable>  $relationships
+     * @return array<string, string|callable>
+     */
+    private static function normalizeRelationships(array $relationships): array
+    {
+        $normalized = [];
+
+        foreach ($relationships as $key => $value) {
+            if (is_int($key) && is_string($value)) {
+                $normalized[$value] = $value;
+
+                continue;
+            }
+
+            if (is_string($key)) {
+                $normalized[$key] = $value;
+            }
+        }
+
+        return $normalized;
+    }
+
+    public static function fromRequest(EloquentBuilder|QueryBuilder $builder, ?string $resource = null): self
+    {
         $data = Validator::validate(request()->query(), self::rules());
+
         return new self(
             $builder,
             $resource,
-            $data[config('paged-index.request_keys.page_index', "page_index")] ?? 0,
-            $data[config('paged-index.request_keys.page_size', "page_size")] ?? 0,
-            $data[config('paged-index.request_keys.sort_column', "sort_column")] ?? config('paged-index.defaults.sort_column', 'id'),
-            $data[config('paged-index.request_keys.sort_direction', "sort_direction")] ?? config('paged-index.defaults.sort_direction', 'asc'),
-            $data[config('paged-index.request_keys.filters', "filters")] ?? [],
-            $data[config('paged-index.request_keys.relationships', "relationships")] ?? [],
+            $data[config('paged-index.request_keys.page_index', 'page_index')] ?? 0,
+            $data[config('paged-index.request_keys.page_size', 'page_size')] ?? 0,
+            $data[config('paged-index.request_keys.sort_column', 'sort_column')] ?? config('paged-index.defaults.sort_column', 'id'),
+            $data[config('paged-index.request_keys.sort_direction', 'sort_direction')] ?? config('paged-index.defaults.sort_direction', 'asc'),
+            $data[config('paged-index.request_keys.filters', 'filters')] ?? [],
+            $data[config('paged-index.request_keys.relationships', 'relationships')] ?? [],
+            [],
             [],
             []
         );
     }
 
     protected ?int $pageIndex;
+
     protected ?int $pageSize;
+
     protected ?string $sortColumn;
+
     protected ?string $sortDirection;
+
     /** @var string[] */
     protected array $filters;
+
     /** @var string[] */
     protected array $relationships;
 
@@ -63,27 +96,26 @@ final readonly class PagedIndex implements Jsonable {
     /** @var array<string, string|callable(QueryBuilder|EloquentBuilder, mixed): void> */
     private array $allowedFilters;
 
+    /** @var array<string, string|callable> */
+    private array $allowedRelationships;
+
     /**
-     * @param QueryBuilder|EloquentBuilder $builder
-     * @param class-string|null $resource
-     * @param int|null $pageIndex
-     * @param int|null $pageSize
-     * @param string|null $sortColumn
-     * @param string|null $sortDirection
-     * @param string[] $filters
-     * @param string[] $relationships
+     * @param  class-string|null  $resource
+     * @param  string[]  $filters
+     * @param  string[]  $relationships
      */
     public function __construct(
         protected QueryBuilder|EloquentBuilder $builder,
-        protected string|null                  $resource = null,
-        ?int                                   $pageIndex = null,
-        ?int                                   $pageSize = null,
-        ?string                                $sortColumn = null,
-        ?string                                $sortDirection = null,
-        array                                  $filters = [],
-        array                                  $relationships = [],
-        array                                  $allowedSorts = [],
-        array                                  $allowedFilters = []
+        protected ?string $resource = null,
+        ?int $pageIndex = null,
+        ?int $pageSize = null,
+        ?string $sortColumn = null,
+        ?string $sortDirection = null,
+        array $filters = [],
+        array $relationships = [],
+        array $allowedSorts = [],
+        array $allowedFilters = [],
+        array $allowedRelationships = []
     ) {
         $this->pageIndex = $pageIndex ?? 0;
         $this->pageSize = $pageSize ?? 0;
@@ -93,9 +125,11 @@ final readonly class PagedIndex implements Jsonable {
         $this->relationships = $relationships;
         $this->allowedSorts = $allowedSorts;
         $this->allowedFilters = $allowedFilters;
+        $this->allowedRelationships = self::normalizeRelationships($allowedRelationships);
     }
 
-    public function allowedSorts(array $sorts, bool $merge = true): self {
+    public function allowedSorts(array $sorts, bool $merge = true): self
+    {
         $allowed = $merge ? array_replace($this->allowedSorts, $sorts) : $sorts;
 
         return new self(
@@ -109,10 +143,12 @@ final readonly class PagedIndex implements Jsonable {
             relationships: $this->relationships,
             allowedSorts: $allowed,
             allowedFilters: $this->allowedFilters,
+            allowedRelationships: $this->allowedRelationships,
         );
     }
 
-    public function allowedFilters(array $filters, bool $merge = true): self {
+    public function allowedFilters(array $filters, bool $merge = true): self
+    {
         $allowed = $merge ? array_replace($this->allowedFilters, $filters) : $filters;
 
         return new self(
@@ -126,32 +162,59 @@ final readonly class PagedIndex implements Jsonable {
             relationships: $this->relationships,
             allowedSorts: $this->allowedSorts,
             allowedFilters: $allowed,
+            allowedRelationships: $this->allowedRelationships,
         );
     }
 
-    protected function applyPipeline($builder, array $pipes) {
+    public function allowedRelationships(array $relationships, bool $merge = true): self
+    {
+        $allowedRelationships = self::normalizeRelationships($relationships);
+        $allowed = $merge
+            ? array_replace($this->allowedRelationships, $allowedRelationships)
+            : $allowedRelationships;
+
+        return new self(
+            builder: $this->builder,
+            resource: $this->resource,
+            pageIndex: $this->pageIndex,
+            pageSize: $this->pageSize,
+            sortColumn: $this->sortColumn,
+            sortDirection: $this->sortDirection,
+            filters: $this->filters,
+            relationships: $this->relationships,
+            allowedSorts: $this->allowedSorts,
+            allowedFilters: $this->allowedFilters,
+            allowedRelationships: $allowed,
+        );
+    }
+
+    protected function applyPipeline($builder, array $pipes)
+    {
         return app(Pipeline::class)
             ->send($builder)
             ->through($pipes)
             ->thenReturn();
     }
 
-    public function getObjects(): PagedIndexCollection {
+    public function getObjects(): PagedIndexCollection
+    {
         $filtered = $this->applyPipeline($this->builder->clone(), [
-            new RelationshipsPipe($this->relationships),
+            new RelationshipsPipe($this->relationships, $this->allowedRelationships),
             new SortPipe($this->sortColumn, $this->sortDirection, $this->allowedSorts),
-            new FilterPipe($this->filters ?? [], $this->allowedFilters)
+            new FilterPipe($this->filters ?? [], $this->allowedFilters),
         ]);
+
         $count = $filtered->clone()->count();
+
         return $this->applyPipeline($filtered, [
             new PaginationPipe($this->pageIndex ?? 0, $this->pageSize ?? 0),
             new TransformPipe($this->resource),
-            new ToPagedIndexCollectionPipe($count, $this->pageIndex, $this->pageSize)
+            new ToPagedIndexCollectionPipe($count, $this->pageIndex, $this->pageSize),
         ]);
     }
 
-    public function toJson($options = 0): string {
+    public function toJson($options = 0): string
+    {
         return $this->getObjects()->toJson($options);
     }
-
 }

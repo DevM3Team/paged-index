@@ -22,7 +22,7 @@ By default, the library reads these query-string keys (all configurable in `conf
 - `sort_column` – allowed column or key defined via `allowedSorts()`.
 - `sort_direction` – `asc` or `desc`.
 - `filters[]` – keyed filter values matched against `allowedFilters()`.
-- `relationships[]` – relationships to eager load when using an Eloquent builder.
+- `relationships[]` – relationships to eager load when using an Eloquent builder, subject to `allowedRelationships()`.
 
 ## Quick start
 Use `PagedIndex::fromRequest()` to turn an Eloquent or query builder into a paginated response.
@@ -42,6 +42,10 @@ class UserController
                 'name' => 'name',                 // simple where
                 'email' => fn ($q, $value) => $q->where('email', 'like', "%{$value}%"),
             ])
+            ->allowedRelationships([
+                'posts',
+                'profile' => fn ($query) => $query->where('active', true),
+            ])
             ->getObjects();
     }
 }
@@ -59,7 +63,7 @@ The returned `PagedIndexCollection` JSON structure is:
 
 ### How it works
 1. Query parameters are validated and merged with defaults.
-2. Allowed relationships are eager loaded (Eloquent only).
+2. Allowed relationships are eager loaded only when they are allowlisted with `allowedRelationships()` and only on Eloquent builders.
 3. Sorting and filtering are applied using the `allowedSorts`/`allowedFilters` map you provide. Each entry can be a column name or a closure receiving the builder.
 4. Pagination skips/limits the query when `page_size` is greater than zero.
 5. The collection is optionally transformed with a Laravel API resource class, then wrapped in `PagedIndexCollection`.
