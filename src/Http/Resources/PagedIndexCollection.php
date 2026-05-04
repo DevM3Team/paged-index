@@ -3,7 +3,6 @@
 namespace M3Team\PagedIndex\Http\Resources;
 
 use Illuminate\Http\Resources\Json\ResourceCollection;
-use JetBrains\PhpStorm\ArrayShape;
 
 class PagedIndexCollection extends ResourceCollection
 {
@@ -20,12 +19,7 @@ class PagedIndexCollection extends ResourceCollection
         $this->pageSize = $pageSize;
     }
 
-    #[ArrayShape([
-        'objects' => "\Illuminate\Support\Collection",
-        "total" => "int",
-        "page_index" => "int",
-        "page_size" => "int"
-    ])] public function toArray($request)
+    public function toArray($request)
     {
         return [
             'objects' => $this->collection->toArray(),

@@ -65,11 +65,11 @@ The returned `PagedIndexCollection` JSON structure is:
 5. The collection is optionally transformed with a Laravel API resource class, then wrapped in `PagedIndexCollection`.
 
 ## Generator command
-Create a stubbed Paged Index class for a model:
+Create a plain application class for paged-index composition:
 ```bash
 php artisan make:paged_index UserPagedIndex
 ```
-Add `--database` to generate a database-focused stub. Classes are placed in `app/Http/PagedIndexes`.
+Classes are placed in `app/Http/PagedIndexes`.
 
 ## Deprecated class
 The legacy `DatabasePagedIndex` remains for backward compatibility but is deprecated as of v5. Use `PagedIndex` for new code.
